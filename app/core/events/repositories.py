@@ -1,19 +1,22 @@
+from dataclasses import dataclass
+
+from typing import Optional
 from app.infra.postgres.db import Database
 
 
-class Calendar:
-    def __init__(self, database: Database):
-        self.database = database
+@dataclass
+class EventRepository:
+    database: Database
 
-    async def create_event(self, event_name, event_date, event_time, event_details):
-        insert_query = """
-            INSERT INTO events (name, date, time, details)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id;
-        """
-        async with self.database.connection as conn:
-            event_id = await conn.fetchval(insert_query, event_name, event_date, event_time, event_details)
-            return event_id
+    async def create_event_if_not_exists(self, id: int, name: str, date: str, time: str, details: Optional[str] = None) -> None:
+        create_event_query = """
+        INSERT INTO events (id, name, date, time, details)
+        VALUES ($1, $2, $3, $4, $5) 
+        ON CONFLICT (id) DO NOTHING"""
+
+        async with self.database.connection() as conn:
+            await conn.execute(create_event_query, id, name, date, time, details)
+
 
     async def read_event(self, event_id):
         sql_query = "SELECT * FROM events WHERE id = $1"
@@ -71,5 +74,6 @@ class Calendar:
         } for event in events
         ]
 
-    async def display_event_sorted(self):
-        return await self.display_event(reverse=True)
+
+
+

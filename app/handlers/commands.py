@@ -23,6 +23,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         await context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_message)
 
+
+async def register_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message and update.message.text and update.message.user.id:
+        try:
+
+        except Exception as e:
+            await context.bot.send_message(chat_id=update.message.chat_id, text=f"Произошла ошибка! {str(e)}")
+
+
 async def create_event_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message:
         try:

@@ -8,23 +8,25 @@ from app.infra.postgres.db import Database
 class EventRepository:
     database: Database
 
-    async def create_event_if_not_exists(self, id: int, name: str, date: str, time: str, details: Optional[str] = None) -> None:
-        create_event_query = """
-        INSERT INTO events (id, name, date, time, details)
-        VALUES ($1, $2, $3, $4, $5) 
-        ON CONFLICT (id) DO NOTHING"""
+    async def create_event_if_not_exists(self, user_id: int, name: str, date: str, time: str, details: Optional[str] = None) -> None:
+
+        create_event_query = f"""
+        INSERT INTO events (user_id, name, date, time, details)
+        VALUES ($1, $2, $3, $4, $5)
+        """
 
         async with self.database.connection() as conn:
-            await conn.execute(create_event_query, id, name, date, time, details)
+            await conn.execute(create_event_query, user_id, name, date, time, details or '')
 
 
-    async def read_event(self, event_id):
-        sql_query = "SELECT * FROM events WHERE id = $1"
-        async with self.database.connection as conn:
-            event = await conn.fetchrow(sql_query, event_id)
+    async def read_event(self, id: int, user_id: int) -> Optional[dict]:
+        sql_query = "SELECT * FROM events WHERE id = $1 AND user_id = $2"
+        async with self.database.connection() as conn:
+            event = await conn.fetchrow(sql_query, id)
             if event:
                 return {
                     "id": event["id"],
+                    "user_id": event["user_id"],
                     "name": event["name"],
                     "date": event["date"],
                     "time": event["time"],
@@ -32,23 +34,23 @@ class EventRepository:
                 }
             raise ValueError("Такого события нет! Пожалуйста, введите корректный номер события.")
 
-    async def edit_event(self, event_id, name=None, date=None, time=None, details=None):
+    async def edit_event(self, user_id: int, id: int, name: Optional[str]=None, date: Optional[str]=None, time: Optional[str]=None, details:Optional[str]=None) -> None:
         update_query = """
             UPDATE events 
-            SET name = COALESCE($1, name), 
-                date = COALESCE($2, date), 
-                time = COALESCE($3, time), 
-                details = COALESCE($4, details)
-            WHERE id = $5;
+            SET name = COALESCE($3, name), 
+                date = COALESCE($4, date), 
+                time = COALESCE($5, time), 
+                details = COALESCE($6, details)
+            WHERE user_id = $1 AND id = $2;
         """
-        async with self.database.connection as conn:
-            await conn.execute(update_query, name, date, time, details, event_id)
+        async with self.database.connection() as conn:
+            await conn.execute(update_query, user_id, name, date, time, details, id)
 
 
-    async def delete_event(self, event_id):
-        delete_query = "DELETE FROM events WHERE id = $1 RETURNING *;"
-        async with self.database.connection as conn:
-            deleted_event = await conn.fetchrow(delete_query, event_id)
+    async def delete_event(self, id: int, user_id: int) -> Optional[dict]:
+        delete_query = "DELETE FROM events WHERE id = $1 AND user_id = $2 RETURNING *;"
+        async with self.database.connection() as conn:
+            deleted_event = await conn.fetchrow(delete_query, id, user_id)
             if deleted_event:
                 return {
                 "id": deleted_event["id"],
@@ -59,11 +61,11 @@ class EventRepository:
                 }
             raise ValueError("Такого события нет! Пожалуйста введите корректный номер события")
 
-    async def display_event(self, reverse=False):
+    async def display_event(self, user_id: int, reverse=False) -> Optional[list]:
         order_by = "ASC" if not reverse else "DESC"
-        display_query = f"SELECT * FROM events ORDER BY date {order_by}"
-        async with self.database.connection as conn:
-            events = await conn.fetch(display_query)
+        display_query = f"SELECT * FROM events WHERE user_id = $1 ORDER BY date {order_by}"
+        async with self.database.connection() as conn:
+            events = await conn.fetch(display_query, user_id)
         return [
         {
             "id": event["id"],

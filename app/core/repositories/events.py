@@ -13,7 +13,7 @@ class EventRepository:
         details = details or ''
         create_event_query = f"""
         INSERT INTO events (name, date, time, details, user_id)
-        VALUES ($1, $2, $3, $4, $5) 
+        VALUES ($1, $2, $3, $4, $5)
         """
 
         async with self.database.connection() as conn:

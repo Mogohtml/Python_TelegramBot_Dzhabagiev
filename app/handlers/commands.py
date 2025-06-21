@@ -6,7 +6,8 @@ from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, Mess
 from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from calendar_bot.events.models import BotStatistics, Appointment
+from calendar_bot.events.models import BotStatistics, Appointment, Event
+from calendar_bot.users.models import User
 from settings.config import AppSettings
 from app.infra.postgres.db import Database
 
@@ -334,3 +335,41 @@ async def button_callback(update: Update, context: CallbackContext) -> None:
         appointment.save()
         await query.edit_message_text(text="Встреча отклонена.")
 
+async def login_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message and update.message.from_user:
+        try:
+            telegram_id = int(update.message.from_user.id)
+            user, created = User.objects.get_or_create(
+                id=telegram_id,
+                defaults={
+                    'first_name': update.message.from_user.first_name,
+                    'last_name': update.message.from_user.last_name
+                }
+            )
+            if created:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="Ваш аккаунт был создан и Telegram ID успешно подключен к вашей учетной записи."
+                )
+            else:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="Ваш Telegram ID уже подключен к вашей учетной записи."
+                )
+        except Exception as e:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"Произошла ошибка: {str(e)}"
+            )
+
+async def calendar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message and update.message.from_user:
+        try:
+            user_id = update.message.from_user.id
+            events = Event.objects.filter(user_id=user_id)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{[event for event in events]}")
+        except Exception as e:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"Произошла ошибка: {str(e)}"
+            )

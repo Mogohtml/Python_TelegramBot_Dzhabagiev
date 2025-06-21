@@ -7,7 +7,8 @@ from app.handlers.commands import (
     edit_event_handler,
     delete_event_handler,
     display_event_sorted_handler,
-    button_callback
+    button_callback,
+    login_handler,
 )
 
 HANDLERS: tuple[BaseHandler, ...] = (
@@ -19,4 +20,5 @@ HANDLERS: tuple[BaseHandler, ...] = (
     CommandHandler("delete_event", delete_event_handler),
     CommandHandler("sorted_events", display_event_sorted_handler),
     CallbackQueryHandler(button_callback),
+    CommandHandler("login", login_handler),
 )

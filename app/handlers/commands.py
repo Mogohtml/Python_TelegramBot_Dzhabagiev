@@ -271,15 +271,15 @@ async def display_event_sorted_handler(update: Update, context: ContextTypes.DEF
                     if all_events:
                         if choice_sorted == "1":
                             events_text = "\n".join([
-                                                        f"Event number: {event['id']}, Date: {event['date']}, Time: {event['time']}, Details: {event['details'] if event['details'] else None}"
-                                                        for event in all_events])
+                                f"Event number: {event['id']}, Date: {event['date']}, Time: {event['time']}, Details: {event['details'] if event['details'] else None}"
+                                for event in all_events])
                             await context.bot.send_message(chat_id=update.message.chat_id,
                                                            text=f"Все события в порядке возрастания:\n{events_text}")
 
                         elif choice_sorted == "2":
                             events_text = "\n".join([
-                                                        f"Event number: {event['id']}, Date: {event['date']}, Time: {event['time']}, Details: {event['details'] if event['details'] else None}"
-                                                        for event in all_events])
+                                f"Event number: {event['id']}, Date: {event['date']}, Time: {event['time']}, Details: {event['details'] if event['details'] else None}"
+                                for event in all_events])
                             await context.bot.send_message(chat_id=update.message.chat_id,
                                                            text=f"Все события в порядке убывания:\n{events_text}")
                     else:
@@ -292,8 +292,8 @@ async def display_event_sorted_handler(update: Update, context: ContextTypes.DEF
                 all_events = await context.application.event_service.display_event_sorted(user_id, reverse=False)
                 if all_events:
                     events_text = "\n".join([
-                                                f"Event number: {event['id']}, Date: {event['date']}, Time: {event['time']}, Details: {event['details'] if event['details'] else None}"
-                                                for event in all_events])
+                        f"Event number: {event['id']}, Date: {event['date']}, Time: {event['time']}, Details: {event['details'] if event['details'] else None}"
+                        for event in all_events])
                     await context.bot.send_message(chat_id=update.message.chat_id,
                                                    text=f"Все события в порядке возрастания:\n{events_text}")
                 else:
@@ -302,10 +302,10 @@ async def display_event_sorted_handler(update: Update, context: ContextTypes.DEF
             await context.bot.send_message(chat_id=update.message.chat_id, text=f"Произошла ошибка. {str(e)}")
 
 
-async def send_meeting_notifications(context: CallbackContext, meeting, chat_id) -> None:
+async def send_meeting_notifications_handler(context: CallbackContext, meeting, chat_id) -> None:
     keyboard = [
         [
-            InlineKeyboardButton("Подтвердить",  callback_data=f"accept_{meeting.id}"),
+            InlineKeyboardButton("Подтвердить", callback_data=f"accept_{meeting.id}"),
             InlineKeyboardButton("Отклонить", callback_data=f"reject_{meeting.id}")
         ]
     ]
@@ -314,11 +314,12 @@ async def send_meeting_notifications(context: CallbackContext, meeting, chat_id)
     message = (
         f"У вас запланирована встреча {meeting.name} на {meeting.date} в {meeting.time}.\n"
         "Пожалуйста, подтвердите или отклоните встречу."
-        )
+    )
 
     await context.bot.send_message(chat_id=chat_id, text=message, reply_markup=markup)
 
-async def button_callback(update: Update, context: CallbackContext) -> None:
+
+async def button_callback_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
 
@@ -335,6 +336,7 @@ async def button_callback(update: Update, context: CallbackContext) -> None:
         appointment.save()
         await query.edit_message_text(text="Встреча отклонена.")
 
+
 async def login_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message and update.message.from_user:
         try:
@@ -348,28 +350,110 @@ async def login_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             )
             if created:
                 await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
+                    chat_id=update.message.chat_id,
                     text="Ваш аккаунт был создан и Telegram ID успешно подключен к вашей учетной записи."
                 )
             else:
                 await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
+                    chat_id=update.message.chat_id,
                     text="Ваш Telegram ID уже подключен к вашей учетной записи."
                 )
         except Exception as e:
             await context.bot.send_message(
-                chat_id=update.effective_chat.id,
+                chat_id=update.message.chat_id,
                 text=f"Произошла ошибка: {str(e)}"
             )
 
-async def calendar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+
+async def calendar_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message and update.message.from_user:
         try:
             user_id = update.message.from_user.id
             events = Event.objects.filter(user_id=user_id)
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{[event for event in events]}")
+
+            if not events:
+                await context.bot.send_message(
+                    chat_id=update.message.chat_id,
+                    text="У вас нет запланированных событий."
+                )
+                return
+
+            events_list = "\n".join(
+                [
+                    f"Событие: {event.name}, Дата: {event.date}, Время: {event.time}, Детали: {event.details if event.details else 'Нет'}"
+                    for event in events]
+            )
+
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=f"Ваши события:\n{events_list}"
+            )
+
         except Exception as e:
             await context.bot.send_message(
-                chat_id=update.effective_chat.id,
+                chat_id=update.message.chat_id,
                 text=f"Произошла ошибка: {str(e)}"
             )
+
+
+async def make_event_public_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message and update.message.from_user:
+        try:
+            user_id = update.message.from_user.id
+            event_id = int(update.message.text.split()[1])
+            event = Event.objects.get(user_id=user_id, id=event_id)
+            event.is_public = True
+            event.save()
+            await context.bot.send_message(chat_id=update.message.chat_id, text="Вы успешно опубликовали событие!")
+        except Exception as e:
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=f"Произошла ошибка: {str(e)}"
+            )
+
+async def get_published_events_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message and update.message.from_user:
+        try:
+            user_id = update.message.text.split()[1]
+            events = Event.objects.filter(user_id=user_id, is_public=True)
+            published_events = "\n".join([
+                f"Event number: {event.id}, Date: {event.date}, Time: {event.time}, Details: {event.details if event.details else 'None'}"
+                for event in events
+            ])
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=f"Вот все опубликованные события пользователя: \n{published_events}"
+            )
+        except Exception as e:
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=f"Произошла ошибка: {str(e)}"
+            )
+
+async def get_common_events_for_all_users_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message and update.message.from_user:
+        try:
+            events = Event.objects.filter(is_public=True)
+
+            if not events:
+                await context.bot.send_message(
+                    chat_id=update.message.chat_id,
+                    text="Нет доступных публичных событий."
+                )
+                return
+
+            common_published_events = "\n".join([
+                f"Номер события: {event.id}, Дата: {event.date}, Время: {event.time}, Детали: {event.details if event.details else 'Нет'}"
+                for event in events
+            ])
+
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=f"Общие публичные события:\n{common_published_events}"
+            )
+        except Exception as e:
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=f"Произошла ошибка: {str(e)}"
+            )
+

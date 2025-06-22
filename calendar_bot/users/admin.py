@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .models import User
-from ..events.models import Event, Appointment
+from events.models import Event, Appointment
 
 
 class EventInLine(admin.TabularInline):
@@ -19,5 +19,8 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('first_name', 'last_name')
     search_fields = ('first_name', 'last_name', 'email')
 
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
+if not admin.site.is_registered(User):
+    admin.site.register(User, CustomUserAdmin)
+else:
+    admin.site.unregister(User)
+    admin.site.register(User, CustomUserAdmin)

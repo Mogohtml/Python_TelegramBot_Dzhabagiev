@@ -1,7 +1,8 @@
 import re
 from datetime import datetime
 
-from telegram import Update
+from django.http import HttpRequest
+from telegram import Update, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
 from telegram.ext import CallbackContext
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -11,7 +12,9 @@ from calendar_bot.users.models import User
 from settings.config import AppSettings
 from app.infra.postgres.db import Database
 
+from calendar_bot.events.views import ExportEventsView
 from django.conf import settings as django_settings
+
 
 settings = AppSettings()
 
@@ -457,3 +460,56 @@ async def get_common_events_for_all_users_handler(update: Update, context: Conte
                 text=f"Произошла ошибка: {str(e)}"
             )
 
+
+async def uploading_events_handler(update: Update, context: CallbackContext) -> None:
+    if update.message and update.message.from_user:
+        try:
+            user_id = update.message.from_user.id
+            events = Event.objects.filter(user_id=user_id)
+
+            keyboard = [
+                [KeyboardButton("JSON", callback_data='export_json')],
+                [KeyboardButton("CSV", callback_data='export_csv')]
+            ]
+            markup = InlineKeyboardMarkup(keyboard)
+
+
+            await context.bot.send_message(chat_id=update.message.chat_id,
+                                           text="Выберите формат для выгрузки событий",
+                                           reply_markup=markup)
+
+        except Exception as e:
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=f"Произошла ошибка: {str(e)}"
+            )
+
+async def uploading_button_callback(update: Update, context: CallbackContext) -> None:
+
+    query = update.callback_query
+    await query.answer()
+
+    user_id = update.message.from_user.id
+    format = update.message.text.split()[1]
+
+    export_view = ExportEventsView()
+
+    request = HttpRequest()
+    request.method = "GET"
+
+    response = export_view.get(request, user_id, format)
+
+    if query.data == 'export_json':
+        await context.bot.send_document(
+            chat_id=update.callback_query.message.chat,
+            document=response.context,
+            filename='events.json',
+            caption="Ваши события в формате JSON:"
+        )
+    elif query.data == 'export_csv':
+        await context.bot.send_document(
+            chat_id=update.callback_query.message.chat,
+            document=response.context,
+            filename='events.csv',
+            caption="Выши события в формате CSV"
+        )

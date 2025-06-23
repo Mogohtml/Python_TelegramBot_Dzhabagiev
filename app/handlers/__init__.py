@@ -10,7 +10,10 @@ from app.handlers.commands import (
     button_callback_handler,
     login_handler,
     calendar_handler,
-    make_event_public_handler
+    make_event_public_handler,
+    get_published_events_handler,
+    get_common_events_for_all_users_handler,
+    uploading_events_handler
 )
 
 HANDLERS: tuple[BaseHandler, ...] = (
@@ -25,4 +28,6 @@ HANDLERS: tuple[BaseHandler, ...] = (
     CommandHandler("login", login_handler),
     CommandHandler("calendar_event", calendar_handler),
     CommandHandler("publish_event", make_event_public_handler),
+    CommandHandler('common_events', get_common_events_for_all_users_handler),
+    CommandHandler('uploading_events', uploading_events_handler)
 )

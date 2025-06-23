@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.infra.postgres.db import Database
+from calendar_bot.events.models import Event
+
 
 @dataclass
 class UserRepository:

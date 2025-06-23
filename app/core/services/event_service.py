@@ -22,5 +22,9 @@ class EventService:
     async def display_event_sorted(self, user_id: int, reverse: bool = False):
         return await self.repository.display_event(user_id, reverse)
 
+    async def invite_user_to_event(self, user_id, event_id, date, time):
+        return await self.repository.invite_user_to_event(user_id, event_id, date, time)
 
+    async def get_events_by_user_id(self, user_id):
+        return await self.repository.get_events_by_user_id(user_id)
 

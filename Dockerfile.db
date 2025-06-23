@@ -1,0 +1,11 @@
+FROM postgres:17
+WORKDIR /docker-entrypoint-initdb.d
+
+ENV POSTGRES_USER=myuser
+ENV POSTGRES_PASSWORD=mypassword
+ENV POSTGRES_DB=mydatabase
+
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=calendar_bot.settings
+
+CMD ["postgres"]

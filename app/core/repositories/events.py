@@ -36,7 +36,8 @@ class EventRepository:
                     "details": event["details"],
                     "user_id": event["user_id"],
                 }
-            raise ValueError("Такого события нет! Пожалуйста, введите корректный номер события.")
+            raise ValueError(
+                "Такого события нет! Пожалуйста, введите корректный номер события.")
 
     async def edit_event(self, event_id: int, user_id: int, name: Optional[str] = None, date: Optional[str] = None,
                          time: Optional[str] = None, details: Optional[str] = None) -> None:
@@ -52,7 +53,8 @@ class EventRepository:
         async with self.database.connection() as conn:
             await conn.execute(update_query, event_id, user_id, name, date, time, details)
 
-    async def delete_event(self, event_id: int, user_id: int) -> Optional[dict]:
+    async def delete_event(self, event_id: int,
+                           user_id: int) -> Optional[dict]:
         delete_query = "DELETE FROM events WHERE id = $1 AND user_id = $2 RETURNING *;"
         async with self.database.connection() as conn:
             deleted_event = await conn.fetchrow(delete_query, event_id, user_id)
@@ -64,9 +66,11 @@ class EventRepository:
                     "time": deleted_event["time"],
                     "details": deleted_event["details"]
                 }
-            raise ValueError("Такого события нет! Пожалуйста введите корректный номер события")
+            raise ValueError(
+                "Такого события нет! Пожалуйста введите корректный номер события")
 
-    async def display_event(self, user_id: int, reverse: bool = False) -> Optional[list]:
+    async def display_event(self, user_id: int,
+                            reverse: bool = False) -> Optional[list]:
         order_by = "ASC" if not reverse else "DESC"
         display_query = f"SELECT * FROM events WHERE user_id = $1 ORDER BY date {order_by}"
         async with self.database.connection() as conn:
@@ -86,14 +90,17 @@ class EventRepository:
 
         busy_time_intervals = []
         for appointment in appointments:
-            starr_time = timezone.make_aware(timezone.datetime.combine(appointment.date, appointment.time))
+            starr_time = timezone.make_aware(
+                timezone.datetime.combine(
+                    appointment.date, appointment.time))
             busy_time_intervals.append(starr_time)
         return busy_time_intervals
 
     async def invite_user_to_event(self, user, event_id, date, time):
         event = Event.objects.get(id=event_id)
 
-        proposed_time = timezone.make_aware(timezone.datetime.combine(date, time))
+        proposed_time = timezone.make_aware(
+            timezone.datetime.combine(date, time))
 
         busy_time_intervals = await self.get_busy_time_intervals(user)
 

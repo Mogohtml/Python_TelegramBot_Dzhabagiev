@@ -23,7 +23,6 @@ class UserRepository:
         async with self.database.connection() as conn:
             await conn.execute(create_user_query, user_id, last_name, first_name, patronymic, email, password)
 
-
     async def read_user(self, user_id: int) -> Optional[dict]:
         get_user_query = """
         SELECT * FROM users WHERE user_id = $1;"""
@@ -41,8 +40,8 @@ class UserRepository:
                 }
             return None
 
-
-    async def edit_user(self, user_id: int, last_name: Optional[str] = None, first_name: Optional[str] = None, patronymic: Optional[str] = None, email: Optional[str] = None, password: Optional[str] = None) -> None:
+    async def edit_user(self, user_id: int, last_name: Optional[str] = None, first_name: Optional[str] = None,
+                        patronymic: Optional[str] = None, email: Optional[str] = None, password: Optional[str] = None) -> None:
         update_user_query = """
         UPDATE users
         SET last_name = COALESCE($2, last_name),
@@ -55,7 +54,6 @@ class UserRepository:
         async with self.database.connection() as conn:
             await conn.execute(update_user_query, user_id, last_name, first_name, patronymic, email, password)
 
-
     async def delete_user(self, user_id: int) -> Optional[dict]:
         delete_user_query = """
         DELETE FROM users WHERE user_id = $1 RETURNING *;"""
@@ -66,8 +64,8 @@ class UserRepository:
                     "user_id": deleted_user['user_id'],
                     "last_name": deleted_user['last_name'],
                     "first_name": deleted_user['first_name'],
-                    "patronymic":  deleted_user['patronymic'],
-                    "email":  deleted_user['email'],
+                    "patronymic": deleted_user['patronymic'],
+                    "email": deleted_user['email'],
                     "password": deleted_user['password']
-            }
+                }
             return None

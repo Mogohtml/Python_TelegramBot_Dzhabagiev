@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: bot
+    depends_on:
+      - db
+    volumes:
+      - .bot:/app
+    command: python app/main
+
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    container_name: db
+    volumes:
+      - postgres_data:/var.lib.postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: web
+    depends_on:
+      - db
+    volumes:
+      - ./web:/app
+    ports:
+      - "8000:8000"
+    command: python manage.py runserver 0.0.0.0:8000
+
+volumes:
+  postgres_data:
+

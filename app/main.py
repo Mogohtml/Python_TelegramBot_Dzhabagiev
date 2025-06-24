@@ -1,3 +1,9 @@
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'calendar_bot.calendar_bot.settings')
+django.setup()
+
 import logging
 
 from telegram.ext import Application as PTBApplication, ApplicationBuilder
